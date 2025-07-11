@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import MovieLists from './components/MovieLists';
+import MovieForm from './components/Form/MovieForm';
+import './App.css';
 
 const App = () => {
   const [movies, setMovies] = useState([]);
@@ -61,6 +63,7 @@ const App = () => {
 
   return (
     <>
+    <MovieForm />
       <section className="text-center my-4">
         <button className="bg-blue-900 hover:bg-blue-950 text-white font-bold py-2 px-4 rounded" onClick={fetchMoviesHandler}>
           Fetch Movies
