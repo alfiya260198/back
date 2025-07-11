@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import MovieLists from './components/MovieLists';
 
 const App = () => {
@@ -7,9 +7,9 @@ const App = () => {
   const [error, setError] = useState(null);
   const [isRetrying, setIsRetrying] = useState(false);
 
-  const retryIntervalRef = useRef(null); // to store interval ID
+  const retryIntervalRef = useRef(null);
 
-  const fetchMoviesHandler = async () => {
+  const fetchMoviesHandler = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -27,24 +27,28 @@ const App = () => {
 
       setMovies(transformed);
       setIsRetrying(false);
-      clearInterval(retryIntervalRef.current); // clear if retry was ongoing
+      clearInterval(retryIntervalRef.current);
     } catch (err) {
-      console.log('Retrying...');
       setError('Something went wrong... Retrying');
       setIsRetrying(true);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  // Retry mechanism (5 seconds)
-  const handleRetry = () => {
-    if (!retryIntervalRef.current) {
+  useEffect(() => {
+    fetchMoviesHandler();
+  }, [fetchMoviesHandler]);
+
+  useEffect(() => {
+    if (isRetrying && !retryIntervalRef.current) {
       retryIntervalRef.current = setInterval(() => {
         fetchMoviesHandler();
       }, 5000);
     }
-  };
+
+    return () => clearInterval(retryIntervalRef.current); // clean up on unmount
+  }, [isRetrying, fetchMoviesHandler]);
 
   const cancelRetry = () => {
     clearInterval(retryIntervalRef.current);
@@ -53,15 +57,12 @@ const App = () => {
     setError('Retry cancelled by user.');
   };
 
-  // Start retry loop when error starts
-  if (isRetrying && !retryIntervalRef.current) {
-    handleRetry();
-  }
+  const memoizedMovies = useMemo(() => movies, [movies]);
 
   return (
     <>
       <section className="text-center my-4">
-        <button className="bg-blue-950 text-white px-7 py-2 border rounded-4xl" onClick={fetchMoviesHandler}>
+        <button className="bg-blue-900 hover:bg-blue-950 text-white font-bold py-2 px-4 rounded" onClick={fetchMoviesHandler}>
           Fetch Movies
         </button>
       </section>
@@ -80,7 +81,9 @@ const App = () => {
           </>
         )}
 
-        {!isLoading && !error && movies.length > 0 && <MovieLists movies={movies} />}
+        {!isLoading && !error && memoizedMovies.length > 0 && (
+          <MovieLists movies={memoizedMovies} />
+        )}
       </section>
     </>
   );
